@@ -81,7 +81,7 @@ class App(QMainWindow):
         self.sensor_data_label.setText(sensor_data)
 
 if __name__ == "__main__":
-    lettuce_image_path = r"D:\1-PythonResearch\imagesAttendance\volumetric_representation.png"
+    lettuce_image_path = r"C:\Users\Jay Degamo\Desktop\VFARM-GUI\imagesAttendance\volumetric_representation.png"
     volumetric_representation = VolumetricRepresentation(lettuce_image_path)
 
     app = QApplication(sys.argv)
