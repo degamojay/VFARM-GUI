@@ -1,9 +1,9 @@
+import sqlite3
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 from volumetricRepresentation import VolumetricRepresentation
 from camMovement import CNCController
 import threading
@@ -14,6 +14,9 @@ class App(QMainWindow):
         super().__init__()
         self.setWindowTitle("Volumetric Visualization")
         self.setGeometry(100, 100, 800, 600)
+
+        # Initialize the database
+        self.init_db()
 
         main_widget = QWidget(self)
         self.setCentralWidget(main_widget)
@@ -46,6 +49,17 @@ class App(QMainWindow):
         run_servo_button.clicked.connect(self.run_servo_motors)
         layout.addWidget(run_servo_button)
 
+    def init_db(self):
+        self.conn = sqlite3.connect('sensor_data.db')
+        c = self.conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS sensor_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        sensor_name TEXT NOT NULL,
+                        data_value TEXT NOT NULL,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                     )''')
+        self.conn.commit()
+
     def create_sensor_buttons(self, layout):
         sensors = ["Nutrient Content", "Water Temperature", "EC Level", "Ambient Temperature", "pH Level"]
 
@@ -76,9 +90,12 @@ class App(QMainWindow):
         self.status_label.setText(status)
 
     def display_sensor_data(self, sensor):
-        # Add logic to fetch sensor data and display it
-        sensor_data = f"Data for {sensor}: [Example Data]"
+        c = self.conn.cursor()
+        c.execute("SELECT data_value FROM sensor_data WHERE sensor_name=? ORDER BY timestamp DESC LIMIT 1", (sensor,))
+        result = c.fetchone()
+        sensor_data = f"Data for {sensor}: {result[0] if result else 'No data available'}"
         self.sensor_data_label.setText(sensor_data)
+
 
 if __name__ == "__main__":
     lettuce_image_path = r"C:\Users\Jay Degamo\Desktop\VFARM-GUI\imagesAttendance\volumetric_representation.png"
