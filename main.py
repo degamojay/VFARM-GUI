@@ -1,5 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel
+from PyQt5.QtWidgets import QPushButton, QCalendarWidget, QHBoxLayout, QGroupBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -13,38 +14,72 @@ class App(QMainWindow):
     def __init__(self, volumetric_representation):
         super().__init__()
         self.setWindowTitle("Volumetric Visualization")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1200, 800)
 
         main_widget = QWidget(self)
         self.setCentralWidget(main_widget)
-        layout = QVBoxLayout(main_widget)
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setSpacing(10)
 
         header_label = QLabel("Volumetric Visualization", self)
         header_label.setAlignment(Qt.AlignCenter)
-        header_label.setFont(QFont("Arial", 16, QFont.Bold))
-        layout.addWidget(header_label)
+        header_label.setFont(QFont("Arial", 20, QFont.Bold))
+        main_layout.addWidget(header_label)
 
+        # Horizontal layout for canvas and controls
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(10)
+
+        # Enlarging and adding the figure to the left side
         self.fig = volumetric_representation.fig
         self.canvas = FigureCanvas(self.fig)
-        layout.addWidget(self.canvas)
+        content_layout.addWidget(self.canvas, 1)
 
-        self.status_label = QLabel("Status: Ready", self)
+        # Control panel on the right side
+        control_panel = self.create_control_panel()
+        content_layout.addLayout(control_panel, 0)
+
+        main_layout.addLayout(content_layout)
+
+    def create_control_panel(self):
+        control_panel_layout = QVBoxLayout()
+        control_panel_layout.setAlignment(Qt.AlignTop)
+        control_panel_layout.setSpacing(5)
+
+        # Status label within a group box for clarity
+        status_group = QGroupBox("System Status")
+        status_layout = QVBoxLayout(status_group)
+        self.status_label = QLabel("Status: Ready")
         self.status_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.status_label)
+        status_layout.addWidget(self.status_label)
+        control_panel_layout.addWidget(status_group)
 
-        button_widget = QWidget(self)
-        button_layout = QVBoxLayout(button_widget)
-        layout.addWidget(button_widget)
+        # Calendar widget
+        self.calendar = QCalendarWidget()
+        control_panel_layout.addWidget(self.calendar)
 
-        self.sensor_data_label = QLabel("", self)
+        # Sensor data display
+        sensor_data_group = QGroupBox("Sensor Data")
+        sensor_data_layout = QVBoxLayout(sensor_data_group)
+        self.sensor_data_date_label = QLabel("Select a date to view sensor data")
+        self.sensor_data_date_label.setAlignment(Qt.AlignCenter)
+        sensor_data_layout.addWidget(self.sensor_data_date_label)
+
+        self.sensor_data_label = QLabel("")
         self.sensor_data_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.sensor_data_label)
+        sensor_data_layout.addWidget(self.sensor_data_label)
+        control_panel_layout.addWidget(sensor_data_group)
 
-        self.create_sensor_buttons(button_layout)
+        # Buttons for sensor data
+        self.create_sensor_buttons(control_panel_layout)
 
-        run_servo_button = QPushButton("Run Servo Motors", self)
+        # Run Servo Motors button
+        run_servo_button = QPushButton("Run Servo Motors")
         run_servo_button.clicked.connect(self.run_servo_motors)
-        layout.addWidget(run_servo_button)
+        control_panel_layout.addWidget(run_servo_button)
+
+        return control_panel_layout
+
 
     def create_sensor_buttons(self, layout):
         sensors = ["Nutrient Content", "Water Temperature", "EC Level", "Ambient Temperature", "pH Level"]
@@ -74,17 +109,32 @@ class App(QMainWindow):
 
     def update_status(self, status):
         self.status_label.setText(status)
+        # Optionally change the font color to red for errors
+        if "Error" in status:
+            self.status_label.setStyleSheet("QLabel { color : red; }")
+        else:
+            self.status_label.setStyleSheet("QLabel { color : black; }")
 
     def display_sensor_data(self, sensor):
         # Add logic to fetch sensor data and display it
         sensor_data = f"Data for {sensor}: [Example Data]"
         self.sensor_data_label.setText(sensor_data)
 
-if __name__ == "__main__":
-    lettuce_image_path = r"C:\Users\Jay Degamo\Desktop\VFARM-GUI\imagesAttendance\volumetric_representation.png"
-    volumetric_representation = VolumetricRepresentation(lettuce_image_path)
+    def display_date_sensor_data(self):
+        selected_date = self.calendar.selectedDate()
+        formatted_date = selected_date.toString("yyyy-MM-dd")
+        self.sensor_data_date_label.setText(f"Sensor Data for {formatted_date}")
 
+        # Fetch and display sensor data for `formatted_date`
+        # This is a placeholder; you'll need to integrate with your actual data source
+        sensor_data = "Example Data: 123"
+        self.sensor_data_label.setText(f"Data for {formatted_date}: {sensor_data}")
+
+
+if __name__ == "__main__":
+    # Example usage
     app = QApplication(sys.argv)
+    volumetric_representation = VolumetricRepresentation(r"C:\Users\Jay Degamo\Desktop\VFARM-GUI\imagesAttendance\volumetric_representation.png")  # Placeholder for actual usage
     window = App(volumetric_representation)
     window.show()
     sys.exit(app.exec_())
