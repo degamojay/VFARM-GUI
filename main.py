@@ -41,6 +41,17 @@ class App(QMainWindow):
 
         main_layout.addLayout(content_layout)
 
+        # Dictionary to store sensor data
+        self.sensor_data = {
+            "Nutrient Content": "2",
+            "Water Temperature": "2",
+            "EC Level": "2",
+            "Ambient Temperature": "2",
+            "pH Level": "2"
+        }
+
+        self.display_sensor_data()
+
     def create_control_panel(self):
         control_panel_layout = QVBoxLayout()
         control_panel_layout.setAlignment(Qt.AlignTop)
@@ -80,7 +91,6 @@ class App(QMainWindow):
 
         return control_panel_layout
 
-
     def create_sensor_buttons(self, layout):
         sensors = ["Nutrient Content", "Water Temperature", "EC Level", "Ambient Temperature", "pH Level"]
 
@@ -115,10 +125,22 @@ class App(QMainWindow):
         else:
             self.status_label.setStyleSheet("QLabel { color : black; }")
 
-    def display_sensor_data(self, sensor):
-        # Add logic to fetch sensor data and display it
-        sensor_data = f"Data for {sensor}: [Example Data]"
-        self.sensor_data_label.setText(sensor_data)
+
+    def display_sensor_data(self, sensor_name=None):
+        """
+        Update the display with new data for a specific sensor, if provided,
+        or for all sensors otherwise.
+        """
+        if sensor_name:
+            # Imagine get_sensor_data is a function that fetches the latest data for a given sensor.
+            # You would need to implement this function based on your actual data retrieval logic.
+            self.sensor_data[sensor_name] = self.get_sensor_data(sensor_name)
+        
+        sensor_data_text = ""
+        for sensor, data in self.sensor_data.items():
+            sensor_data_text += f"{sensor}: {data}\n"
+        self.sensor_data_label.setText(sensor_data_text)
+
 
     def display_date_sensor_data(self):
         selected_date = self.calendar.selectedDate()
