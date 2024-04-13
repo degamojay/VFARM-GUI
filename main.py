@@ -33,24 +33,39 @@ class App(QMainWindow):
         content_layout.addWidget(self.canvas, 1)
 
         control_panel = self.create_control_panel()
-        content_layout.addLayout(control_panel, 0)
+        content_layout.addLayout(control_panel)
+        
+        self.plant_label = QLabel("Plant 1")
+        self.plant_label.setAlignment(Qt.AlignCenter)
+        self.plant_label.setFont(QFont("Arial", 16))  # Set the font size to 16
+        main_layout.addWidget(self.plant_label)
 
         main_layout.addLayout(content_layout)
 
         plant_buttons_layout = self.create_plant_buttons()  # Create plant label buttons
         main_layout.addLayout(plant_buttons_layout)
 
+
+
     def create_plant_buttons(self):
         plant_buttons_layout = QHBoxLayout()
         plant_buttons_layout.setAlignment(Qt.AlignLeft)
         plant_buttons_layout.setSpacing(20)
 
+        self.plant_buttons = []
+
         for i in range(1, 7):
             plant_button = QPushButton(f"Plant {i}")
             plant_button.setMinimumSize(125, 20)  # Adjust the height as needed
+            plant_button.clicked.connect(lambda checked, plant=i: self.update_plant_label(plant))
             plant_buttons_layout.addWidget(plant_button)
+            self.plant_buttons.append(plant_button)
 
         return plant_buttons_layout
+
+    def update_plant_label(self, plant):
+        self.plant_label.setText(f"Plant {plant}")
+
 
 
     def create_control_panel(self):
