@@ -5,7 +5,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from application_logic import ApplicationLogic
+from sensorData import SensorDataThread
 from volumetricRepresentation import VolumetricRepresentation
+from PyQt5.QtCore import pyqtSlot
 
 
 class App(QMainWindow):
@@ -50,7 +52,14 @@ class App(QMainWindow):
         plant_buttons_layout = self.create_plant_buttons()  # Create plant label buttons
         main_layout.addLayout(plant_buttons_layout)
 
-    
+    @pyqtSlot(str)
+    def update_sensor_data(self, data):
+        # Update sensor data in the application logic
+        self.application_logic.update_sensor_data(data)
+        # Update UI widgets with the new sensor data
+        # For example, update QLabel text with sensor data
+        self.sensor_data_label.setText(f"Sensor Data: {data}")
+
     def get_plant_label_text(self):
         return f"Plant {self.application_logic.get_selected_plant()}"
 
@@ -119,4 +128,10 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = App(app_logic)
     window.show()
+
+    # Start the sensor data collection thread
+    sensor_thread = SensorDataThread()
+    sensor_thread.data_updated.connect(window.update_sensor_data)  # Connect the data_updated signal to update_sensor_data method
+    sensor_thread.start()
+
     sys.exit(app.exec_())
