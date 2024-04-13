@@ -50,6 +50,7 @@ class App(QMainWindow):
         plant_buttons_layout = self.create_plant_buttons()  # Create plant label buttons
         main_layout.addLayout(plant_buttons_layout)
 
+    
     def get_plant_label_text(self):
         return f"Plant {self.application_logic.get_selected_plant()}"
 
