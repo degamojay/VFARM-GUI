@@ -67,7 +67,6 @@ class App(QMainWindow):
         self.plant_label.setText(f"Plant {plant}")
 
 
-
     def create_control_panel(self):
         control_panel_layout = QVBoxLayout()
         control_panel_layout.setAlignment(Qt.AlignTop)
@@ -77,6 +76,9 @@ class App(QMainWindow):
         status_layout = QVBoxLayout(status_group)
         self.status_label = QLabel("Status: Ready")
         self.status_label.setAlignment(Qt.AlignCenter)
+        font = self.status_label.font()
+        font.setPointSize(10)  # Set font size to 12
+        self.status_label.setFont(font)
         status_layout.addWidget(self.status_label)
         control_panel_layout.addWidget(status_group)
 
@@ -88,6 +90,9 @@ class App(QMainWindow):
         self.sensor_data_date_label = QLabel("Select a date to view sensor data")
         self.sensor_data_date_label.setAlignment(Qt.AlignCenter)
         self.sensor_data_date_label.setStyleSheet("QLabel { margin-bottom: 20px; }")
+        font = self.sensor_data_date_label.font()
+        font.setPointSize(10)  # Set font size to 12
+        self.sensor_data_date_label.setFont(font)
         sensor_data_layout.addWidget(self.sensor_data_date_label)
 
         # Display all sensor data without buttons
@@ -96,6 +101,9 @@ class App(QMainWindow):
         for sensor in self.sensors:
             sensor_label = QLabel(f"{sensor}: No data available")
             sensor_label.setStyleSheet("QLabel { margin-bottom: 30px; }")  # Add bottom margin
+            font = sensor_label.font()
+            font.setPointSize(10)  # Set font size to 12
+            sensor_label.setFont(font)
             sensor_data_layout.addWidget(sensor_label)
             self.sensor_labels[sensor] = sensor_label
 
@@ -106,6 +114,7 @@ class App(QMainWindow):
         control_panel_layout.addWidget(sensor_data_group)
 
         return control_panel_layout
+
 
     # def run_servo_motors(self):
     #     threading.Thread(target=self.run_cnc_operations).start()
