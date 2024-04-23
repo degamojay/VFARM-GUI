@@ -28,40 +28,67 @@ class App(QMainWindow):
         header_label.setFont(QFont("Arial", 20, QFont.Bold))
         main_layout.addWidget(header_label)
 
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(10)
+        self.content_layout = QHBoxLayout()  # Set content_layout as an instance attribute
+        self.content_layout.setSpacing(10)
 
-        # Dynamic image path selection based on today's date
+        # Dynamic image path selection based on today's date and default to plant 1
         today_date = datetime.now().strftime("%Y-%m-%d")
         image_dir = os.path.join(os.path.dirname(__file__), 'imagesAttendance')
-        image_path = os.path.join(image_dir, f"{today_date}.png")
+        image_path = os.path.join(image_dir, f"{today_date}_plant1.png")  # Default to Plant 1
 
         if os.path.exists(image_path):
             self.fig = VolumetricRepresentation(image_path=image_path).fig
             if self.fig:
                 self.canvas = FigureCanvas(self.fig)
-                content_layout.addWidget(self.canvas, 1)
+                self.content_layout.addWidget(self.canvas, 1)
             else:
                 no_data_label = QLabel("No Data Yet")
                 no_data_label.setAlignment(Qt.AlignCenter)
-                content_layout.addWidget(no_data_label)
+                self.content_layout.addWidget(no_data_label)
         else:
-            no_data_label = QLabel("No image found for today")
+            no_data_label = QLabel("No image found for Plant 1 today")
             no_data_label.setAlignment(Qt.AlignCenter)
-            content_layout.addWidget(no_data_label)
+            self.content_layout.addWidget(no_data_label)
 
         control_panel = self.create_control_panel()
-        content_layout.addLayout(control_panel)
+        self.content_layout.addLayout(control_panel)
 
         self.plant_label = QLabel(self.get_plant_label_text())
         self.plant_label.setAlignment(Qt.AlignCenter)
         self.plant_label.setFont(QFont("Arial", 16))
         main_layout.addWidget(self.plant_label)
 
-        main_layout.addLayout(content_layout)
+        main_layout.addLayout(self.content_layout)  # This correctly adds the layout to main_layout
 
         plant_buttons_layout = self.create_plant_buttons()
         main_layout.addLayout(plant_buttons_layout)
+
+    def update_display_for_plant(self, plant):
+        today_date = datetime.now().strftime("%Y-%m-%d")
+        image_dir = os.path.join(os.path.dirname(__file__), 'imagesAttendance')
+        image_path = os.path.join(image_dir, f"{today_date}_plant{plant}.png")
+
+        # Clear previous widgets in the content layout
+        for i in reversed(range(self.content_layout.count())):
+            widget_to_remove = self.content_layout.itemAt(i).widget()
+            if widget_to_remove:
+                self.content_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+
+        if os.path.exists(image_path):
+            self.fig = VolumetricRepresentation(image_path=image_path).fig
+            if self.fig:
+                self.canvas = FigureCanvas(self.fig)
+                self.content_layout.addWidget(self.canvas, 0)
+            else:
+                no_data_label = QLabel("No Data Yet")
+                no_data_label.setAlignment(Qt.AlignCenter)
+                self.content_layout.addWidget(no_data_label)
+        else:
+            no_data_label = QLabel(f"No image found for Plant {plant} today")
+            no_data_label.setAlignment(Qt.AlignCenter)
+            self.content_layout.addWidget(no_data_label)
+
 
     @pyqtSlot(str)
     def update_sensor_data(self, data):
@@ -92,6 +119,8 @@ class App(QMainWindow):
     def on_plant_button_clicked(self, plant):
         self.application_logic.set_selected_plant(plant)
         self.plant_label.setText(self.get_plant_label_text())
+        self.update_display_for_plant(plant)  # Update the display for the selected plant
+
 
     def create_control_panel(self):
         control_panel_layout = QVBoxLayout()
