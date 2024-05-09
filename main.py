@@ -1,4 +1,6 @@
+import os
 import sys
+from datetime import datetime
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QGridLayout
 from PyQt5.QtWidgets import QCalendarWidget, QHBoxLayout, QGroupBox, QPushButton, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt
@@ -8,7 +10,6 @@ from application_logic import ApplicationLogic
 from sensorData import SensorDataThread
 from volumetricRepresentation import VolumetricRepresentation
 from PyQt5.QtCore import pyqtSlot
-
 
 class App(QMainWindow):
     def __init__(self, application_logic):
@@ -27,38 +28,93 @@ class App(QMainWindow):
         header_label.setFont(QFont("Arial", 20, QFont.Bold))
         main_layout.addWidget(header_label)
 
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(10)
+        self.content_layout = QHBoxLayout()
+        self.canvas_layout = QVBoxLayout()  # Layout for the image canvas
+        self.control_panel_layout = QVBoxLayout()  # Layout for control panel
 
-        self.fig = VolumetricRepresentation(image_path=r"C:\Users\Group N - II\Desktop\VFARM-GUI\imagesAttendance\volumetric_representation.png").fig
-        if self.fig is None:  # Check if fig is None
-                no_data_label = QLabel("No Data Yet")
-                no_data_label.setAlignment(Qt.AlignCenter)
-                content_layout.addWidget(no_data_label)
-        else:
-                self.canvas = FigureCanvas(self.fig)
-                content_layout.addWidget(self.canvas, 1)
+        self.canvas_layout.addWidget(QLabel("Image Canvas"))
+        self.control_panel_layout = self.create_control_panel()
 
-        control_panel = self.create_control_panel()
-        content_layout.addLayout(control_panel)
+        self.content_layout.addLayout(self.canvas_layout, 2)  # Set canvas layout with larger stretch factor
+        self.content_layout.addLayout(self.control_panel_layout, 1)  # Set control panel layout with smaller stretch factor
+
+        self.update_display_for_plant(1)  # Initialize with plant 1
 
         self.plant_label = QLabel(self.get_plant_label_text())
         self.plant_label.setAlignment(Qt.AlignCenter)
-        self.plant_label.setFont(QFont("Arial", 16))  # Set the font size to 16
+        self.plant_label.setFont(QFont("Arial", 16))
         main_layout.addWidget(self.plant_label)
 
-        main_layout.addLayout(content_layout)
+        main_layout.addLayout(self.content_layout)
 
-        plant_buttons_layout = self.create_plant_buttons()  # Create plant label buttons
-        main_layout.addLayout(plant_buttons_layout)
+        self.plant_buttons_layout = self.create_plant_buttons()  # Assign layout to class attribute
+        main_layout.addLayout(self.plant_buttons_layout)
+
+        self.setMinimumSize(800, 600)  # Set minimum size to maintain responsiveness
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.adjust_layouts()
+
+    def adjust_layouts(self):
+        # Adjust layout sizes and alignments based on window size
+        window_width = self.width()
+
+        if window_width < 800:
+            # Adjust plant buttons layout for smaller window width
+            self.plant_buttons_layout.setSpacing(10)
+        else:
+            # Adjust plant buttons layout for larger window width
+            self.plant_buttons_layout.setSpacing(20)
+
+        # Adjust control panel layout alignment based on window width
+        if window_width < 1000:
+            self.control_panel_layout.setAlignment(Qt.AlignLeft)
+        else:
+            self.control_panel_layout.setAlignment(Qt.AlignTop)
+
+
+    def update_display_for_plant(self, plant):
+        today_date = datetime.now().strftime("%Y-%m-%d")
+        image_dir = os.path.join(os.path.dirname(__file__), 'imagesAttendance')
+        image_path = os.path.join(image_dir, f"{today_date}_plant{plant}.png")
+
+        # Clear previous widgets in the canvas layout
+        for i in reversed(range(self.canvas_layout.count())):
+            widget_to_remove = self.canvas_layout.itemAt(i).widget()
+            if widget_to_remove:
+                self.canvas_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+                widget_to_remove.deleteLater()
+
+        if os.path.exists(image_path):
+            self.fig = VolumetricRepresentation(image_path=image_path).fig
+            if self.fig:
+                self.canvas = FigureCanvas(self.fig)
+                self.canvas_layout.addWidget(self.canvas)
+            else:
+                no_data_label = QLabel("No Data Yet")
+                no_data_label.setAlignment(Qt.AlignCenter)
+                self.canvas_layout.addWidget(no_data_label)
+        else:
+            no_data_label = QLabel(f"No image found for Plant {plant} today")
+            no_data_label.setAlignment(Qt.AlignCenter)
+            self.canvas_layout.addWidget(no_data_label)
 
     @pyqtSlot(str)
     def update_sensor_data(self, data):
-        # Update sensor data in the application logic
-        self.application_logic.update_sensor_data(data)
-        # Update UI widgets with the new sensor data
-        # For example, update QLabel text with sensor data
-        self.sensor_data_label.setText(f"Sensor Data: {data}")
+        # Split the mock data into individual values
+        values = data.split(",")
+        try:
+            amb_temp, water_temp, ph_value, ec_value, nutrient_content = map(float, values)
+            # Update the sensor data labels in the GUI with the mock data
+            self.sensor_data_labels["Ambient Temperature"].setText(f"Ambient Temperature: {amb_temp}")
+            self.sensor_data_labels["Water Temperature"].setText(f"Water Temperature: {water_temp}")
+            self.sensor_data_labels["pH Level"].setText(f"pH Level: {ph_value}")
+            self.sensor_data_labels["EC Level"].setText(f"EC Level: {ec_value}")
+            self.sensor_data_labels["Nutrient Content"].setText(f"Nutrient Content: {nutrient_content}")
+        except ValueError:
+            print("Invalid data format received:", data)
 
     def get_plant_label_text(self):
         return f"Plant {self.application_logic.get_selected_plant()}"
@@ -72,7 +128,7 @@ class App(QMainWindow):
 
         for i in range(1, 7):
             plant_button = QPushButton(f"Plant {i}")
-            plant_button.setMinimumSize(125, 20)  # Adjust the height as needed
+            plant_button.setMinimumSize(125, 20)
             plant_button.clicked.connect(lambda checked, plant=i: self.on_plant_button_clicked(plant))
             plant_buttons_layout.addWidget(plant_button)
             self.plant_buttons.append(plant_button)
@@ -82,6 +138,8 @@ class App(QMainWindow):
     def on_plant_button_clicked(self, plant):
         self.application_logic.set_selected_plant(plant)
         self.plant_label.setText(self.get_plant_label_text())
+        self.update_display_for_plant(plant)  # Update the display for the selected plant
+
 
     def create_control_panel(self):
         control_panel_layout = QVBoxLayout()
@@ -93,7 +151,7 @@ class App(QMainWindow):
         self.status_label = QLabel(self.application_logic.get_status())
         self.status_label.setAlignment(Qt.AlignCenter)
         font = self.status_label.font()
-        font.setPointSize(10)  # Set font size to 12
+        font.setPointSize(10)
         self.status_label.setFont(font)
         status_layout.addWidget(self.status_label)
         control_panel_layout.addWidget(status_group)
@@ -107,14 +165,13 @@ class App(QMainWindow):
 
         for sensor, data in self.application_logic.get_sensor_data().items():
             sensor_label = QLabel(f"{sensor}: {data}")
-            sensor_label.setStyleSheet("QLabel { margin-bottom: 30px; }")  # Add bottom margin
+            sensor_label.setStyleSheet("QLabel { margin-bottom: 30px; }")
             font = sensor_label.font()
-            font.setPointSize(10)  # Set font size to 12
+            font.setPointSize(10)
             sensor_label.setFont(font)
             sensor_data_layout.addWidget(sensor_label)
             self.sensor_data_labels[sensor] = sensor_label
 
-        # Add spacer to fill remaining space
         spacer_item = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         sensor_data_layout.addItem(spacer_item)
 
@@ -131,7 +188,7 @@ if __name__ == "__main__":
 
     # Start the sensor data collection thread
     sensor_thread = SensorDataThread()
-    sensor_thread.data_updated.connect(window.update_sensor_data)  # Connect the data_updated signal to update_sensor_data method
+    sensor_thread.data_updated.connect(window.update_sensor_data)
     sensor_thread.start()
 
     sys.exit(app.exec_())

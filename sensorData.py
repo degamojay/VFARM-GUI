@@ -38,8 +38,8 @@ class SensorDataThread(QThread):
                     values = data.split(",")
                     print(f'Values: {values}')
                     if len(values) == 6:
+                        amb_temp, water_temp, ph_value, ec_value, lux_top, lux_bot = map(float, values)
                         try:
-                            amb_temp, water_temp, ph_value, ec_value, lux_top, lux_bot = map(float, values)
                             mycursor.execute("INSERT INTO test (amb_temp, water_temp, ph_value, ec_value, lux_top, lux_bot) VALUES (%s, %s, %s, %s, %s, %s)", (amb_temp, water_temp, ph_value, ec_value, lux_top, lux_bot))
                             mydb.commit()
                             self.data_updated.emit(data)  # Emit signal with new data

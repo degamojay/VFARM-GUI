@@ -54,25 +54,25 @@ class CNCController:
 
     def plant1(self):
         try:
-            command = "$J=G21G91Y-7F100\n"
+            command = "$J=G21G91Y-3F100\n"
             self.ser.write(command.encode())
             #resp = self.ser.readline()
             #print(f"Plant 1 Pos Y: {resp.decode("utf-8")}")
             #self.move_done()
-            command = "$J=G21G91X-0.3F100\n"
+            command = "$J=G21G91X-1F100\n"
             self.ser.write(command.encode())
             #resp = self.ser.readline()
             #print(f"Plant 1 Pos X: {resp.decode("utf-8")}")
             #self.move_done()
             print("Moving to Plant 1 done...")
-            self.poll_idle()
+            #self.poll_idle()
         except serial.SerialException as e:
             print(f"Serial communication error: {e}")
 
     def plant2(self):
         try:
             #command = "$J=G21G91X-3.9F100\n"
-            command = "$J=G21G91X-3F100\n"
+            command = "$J=G21G91X-4F100\n"
             self.ser.write(command.encode())
             print("Moving to Plant 2 done...")
         except serial.SerialException as e:
@@ -81,7 +81,7 @@ class CNCController:
     def plant3(self):
         try:
             #command = "$J=G21G91X-3.7F100\n"
-            command = "$J=G21G91X-4.5F100\n"
+            command = "$J=G21G91X-3F100\n"
             self.ser.write(command.encode())
             print("Moving to Plant 3 done...")
         except serial.SerialException as e:
@@ -89,7 +89,7 @@ class CNCController:
 
     def plant4(self):
         try:
-            command = "$J=G21G91Y-36F100\n"
+            command = "$J=G21G91Y-37F100\n"
             self.ser.write(command.encode())
             print("Moving to Plant 4 done...")
         except serial.SerialException as e:
@@ -97,7 +97,7 @@ class CNCController:
     
     def plant5(self):
         try:
-            command = "$J=G21G91X4.5F100\n"
+            command = "$J=G21G91X4F100\n"
             self.ser.write(command.encode())
             print("Moving to Plant 5 done...")
         except serial.SerialException as e:
@@ -248,8 +248,10 @@ def run_collection():
     cnc_machine.home()
 
     #================================Plant 1=====================================#
-    #time.sleep(1)
-    #cnc_machine.plant1()
+    time.sleep(1)
+    cnc_machine.plant1()
+    cnc_machine.poll_idle("Moving to Plant 1")
+
     # 1st Set of Pic
     time.sleep(5)
     access_cam.capture_images(num_images=1, output_folder="captured_images")
@@ -521,8 +523,8 @@ try:
 
         if start_time is not None and now >= start_time:
         #if now.hour % 4 == 0 and now.minute == 16:
-            # start_time = start_time + timedelta(hours=3)
-            start_time = start_time + timedelta(minutes=15)
+            start_time = start_time + timedelta(hours=3)
+            #start_time = start_time + timedelta(minutes=15)
             ser.write(b'r')
             data = ser.readline().decode().strip()
             print("Received data:", data)
