@@ -1,7 +1,10 @@
-from PyQt5.QtCore import QObject
+import mysql.connector
+from PyQt5.QtCore import QObject, pyqtSignal
 from sensorData import SensorDataThread
 
 class ApplicationLogic(QObject):
+    data_updated = pyqtSignal(dict)
+
     def __init__(self):
         super().__init__()
         self.status = "Ready"
@@ -15,6 +18,7 @@ class ApplicationLogic(QObject):
         }
         self.sensor_thread = SensorDataThread()
         self.sensor_thread.data_updated.connect(self.update_sensor_data)
+        self.update_sensor_data_from_db()
 
     def start_collecting_data(self):
         self.sensor_thread.start()
@@ -34,9 +38,43 @@ class ApplicationLogic(QObject):
             self.sensor_data["Water Temperature"] = water_temp
             self.sensor_data["pH Level"] = ph_value
             self.sensor_data["EC Level"] = ec_value
+            self.data_updated.emit(self.sensor_data)
         except ValueError:
             print("Invalid data format received:", data)
 
+    def update_sensor_data_from_db(self):
+        try:
+            # Connect to MySQL database
+            mydb = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="Thnksfrthmmrs1234!#",
+                database="data_collection"
+            )
+            mycursor = mydb.cursor()
+
+            # Fetch the latest sensor data from the database
+            mycursor.execute("SELECT amb_temp, water_temp, ph_value, ec_value FROM sensor_data ORDER BY timestamp DESC LIMIT 1")
+            data = mycursor.fetchone()
+
+            # Update the sensor data in the application logic
+            if data:
+                amb_temp, water_temp, ph_value, ec_value = data
+                self.sensor_data["Ambient Temperature"] = amb_temp
+                self.sensor_data["Water Temperature"] = water_temp
+                self.sensor_data["pH Level"] = ph_value
+                self.sensor_data["EC Level"] = ec_value
+                self.data_updated.emit(self.sensor_data)
+            else:
+                print("No sensor data found in the database.")
+        except mysql.connector.Error as e:
+            print("MySQL error:", e)
+        finally:
+            # Close the database connection
+            if mycursor:
+                mycursor.close()
+            if mydb:
+                mydb.close()
 
     def get_sensor_data(self):
         return self.sensor_data

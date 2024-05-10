@@ -10,6 +10,7 @@ from application_logic import ApplicationLogic
 from sensorData import SensorDataThread
 from volumetricRepresentation import VolumetricRepresentation
 from PyQt5.QtCore import pyqtSlot
+import mysql.connector
 
 class App(QMainWindow):
     def __init__(self, application_logic):
@@ -102,19 +103,38 @@ class App(QMainWindow):
             self.canvas_layout.addWidget(no_data_label)
 
     @pyqtSlot(str)
-    def update_sensor_data(self, data):
-        # Split the mock data into individual values
-        values = data.split(",")
-        try:
-            amb_temp, water_temp, ph_value, ec_value, nutrient_content = map(float, values)
-            # Update the sensor data labels in the GUI with the mock data
-            self.sensor_data_labels["Ambient Temperature"].setText(f"Ambient Temperature: {amb_temp}")
-            self.sensor_data_labels["Water Temperature"].setText(f"Water Temperature: {water_temp}")
-            self.sensor_data_labels["pH Level"].setText(f"pH Level: {ph_value}")
-            self.sensor_data_labels["EC Level"].setText(f"EC Level: {ec_value}")
-            self.sensor_data_labels["Nutrient Content"].setText(f"Nutrient Content: {nutrient_content}")
-        except ValueError:
-            print("Invalid data format received:", data)
+    def update_sensor_data(self):
+            try:
+                # Connect to MySQL database
+                mydb = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="Thnksfrthmmrs1234!#",
+                    database="data_collection"
+                )
+                mycursor = mydb.cursor()
+
+                # Fetch the latest sensor data from the database
+                mycursor.execute("SELECT amb_temp, water_temp, ph_value, ec_value FROM sensor_data ORDER BY timestamp DESC LIMIT 1")
+                data = mycursor.fetchone()
+
+                # Update the sensor data labels in the GUI
+                if data:
+                    amb_temp, water_temp, ph_value, ec_value = data
+                    self.sensor_data_labels["Ambient Temperature"].setText(f"Ambient Temperature: {amb_temp}")
+                    self.sensor_data_labels["Water Temperature"].setText(f"Water Temperature: {water_temp}")
+                    self.sensor_data_labels["pH Level"].setText(f"pH Level: {ph_value}")
+                    self.sensor_data_labels["EC Level"].setText(f"EC Level: {ec_value}")
+                else:
+                    print("No sensor data found in the database.")
+            except mysql.connector.Error as e:
+                print("MySQL error:", e)
+            finally:
+                # Close the database connection
+                if mycursor:
+                    mycursor.close()
+                if mydb:
+                    mydb.close()
 
     def get_plant_label_text(self):
         return f"Plant {self.application_logic.get_selected_plant()}"
