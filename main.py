@@ -76,9 +76,9 @@ class App(QMainWindow):
 
 
     def update_display_for_plant(self, plant):
-        today_date = datetime.now().strftime("%Y-%m-%d")
-        image_dir = os.path.join(os.path.dirname(__file__), 'imagesAttendance')
-        image_path = os.path.join(image_dir, f"{today_date}_plant{plant}.png")
+        today_date = datetime.now().strftime("%Y%m%d")
+        image_dir = os.path.join(os.path.dirname(__file__), 'captured_images')
+        image_path = os.path.join(image_dir, f"{today_date}_left_{plant}.jpg")
 
         # Clear previous widgets in the canvas layout
         for i in reversed(range(self.canvas_layout.count())):
@@ -101,6 +101,7 @@ class App(QMainWindow):
             no_data_label = QLabel(f"No image found for Plant {plant} today")
             no_data_label.setAlignment(Qt.AlignCenter)
             self.canvas_layout.addWidget(no_data_label)
+
 
     @pyqtSlot(str)
     def update_sensor_data(self):
@@ -177,6 +178,7 @@ class App(QMainWindow):
         control_panel_layout.addWidget(status_group)
 
         self.calendar = QCalendarWidget()
+        self.calendar.clicked.connect(self.update_display_for_selected_date)  # Connect clicked signal
         control_panel_layout.addWidget(self.calendar)
 
         sensor_data_group = QGroupBox("Sensor Data")
@@ -198,6 +200,34 @@ class App(QMainWindow):
         control_panel_layout.addWidget(sensor_data_group)
 
         return control_panel_layout
+
+    def update_display_for_selected_date(self):
+        selected_date = self.calendar.selectedDate().toString("yyyyMMdd")
+        plant = self.application_logic.get_selected_plant()
+        image_path = os.path.join(os.path.dirname(__file__), 'captured_images', f"{selected_date}_left_{plant}.jpg")
+
+        # Clear previous widgets in the canvas layout
+        for i in reversed(range(self.canvas_layout.count())):
+            widget_to_remove = self.canvas_layout.itemAt(i).widget()
+            if widget_to_remove:
+                self.canvas_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+                widget_to_remove.deleteLater()
+
+        if os.path.exists(image_path):
+            self.fig = VolumetricRepresentation(image_path=image_path).fig
+            if self.fig:
+                self.canvas = FigureCanvas(self.fig)
+                self.canvas_layout.addWidget(self.canvas)
+            else:
+                no_data_label = QLabel("No Data Yet")
+                no_data_label.setAlignment(Qt.AlignCenter)
+                self.canvas_layout.addWidget(no_data_label)
+        else:
+            no_data_label = QLabel(f"No image found for Plant {plant} on {selected_date}")
+            no_data_label.setAlignment(Qt.AlignCenter)
+            self.canvas_layout.addWidget(no_data_label)
+
 
 
 if __name__ == "__main__":
