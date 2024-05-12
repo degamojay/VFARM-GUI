@@ -103,40 +103,6 @@ class App(QMainWindow):
             self.canvas_layout.addWidget(no_data_label)
 
 
-    @pyqtSlot(str)
-    def update_sensor_data(self):
-            try:
-                # Connect to MySQL database
-                mydb = mysql.connector.connect(
-                    host="localhost",
-                    user="root",
-                    password="Thnksfrthmmrs1234!#",
-                    database="data_collection"
-                )
-                mycursor = mydb.cursor()
-
-                # Fetch the latest sensor data from the database
-                mycursor.execute("SELECT amb_temp, water_temp, ph_value, ec_value FROM sensor_data ORDER BY timestamp DESC LIMIT 1")
-                data = mycursor.fetchone()
-
-                # Update the sensor data labels in the GUI
-                if data:
-                    amb_temp, water_temp, ph_value, ec_value = data
-                    self.sensor_data_labels["Ambient Temperature"].setText(f"Ambient Temperature: {amb_temp}")
-                    self.sensor_data_labels["Water Temperature"].setText(f"Water Temperature: {water_temp}")
-                    self.sensor_data_labels["pH Level"].setText(f"pH Level: {ph_value}")
-                    self.sensor_data_labels["EC Level"].setText(f"EC Level: {ec_value}")
-                else:
-                    print("No sensor data found in the database.")
-            except mysql.connector.Error as e:
-                print("MySQL error:", e)
-            finally:
-                # Close the database connection
-                if mycursor:
-                    mycursor.close()
-                if mydb:
-                    mydb.close()
-
     def get_plant_label_text(self):
         return f"Plant {self.application_logic.get_selected_plant()}"
 
@@ -202,7 +168,17 @@ class App(QMainWindow):
         return control_panel_layout
 
     def update_display_for_selected_date(self):
-        selected_date = self.calendar.selectedDate().toString("yyyyMMdd")
+        selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
+        
+        # Fetch the last sensor data for the selected date from the database
+        self.application_logic.update_sensor_data_from_db(selected_date)
+
+        # Update the sensor data labels in the GUI
+        sensor_data = self.application_logic.get_sensor_data()
+        for sensor, data in sensor_data.items():
+            self.sensor_data_labels[sensor].setText(f"{sensor}: {data}")
+
+        # Update the image display
         plant = self.application_logic.get_selected_plant()
         image_path = os.path.join(os.path.dirname(__file__), 'captured_images', f"{selected_date}_left_{plant}.jpg")
 
@@ -230,6 +206,8 @@ class App(QMainWindow):
 
 
 
+
+
 if __name__ == "__main__":
     app_logic = ApplicationLogic()
     app = QApplication(sys.argv)
@@ -238,7 +216,7 @@ if __name__ == "__main__":
 
     # Start the sensor data collection thread
     sensor_thread = SensorDataThread()
-    sensor_thread.data_updated.connect(window.update_sensor_data)
+    sensor_thread.data_updated.connect(app_logic.update_sensor_data_from_db)  # Corrected signal-slot connection
     sensor_thread.start()
 
     sys.exit(app.exec_())
